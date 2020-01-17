@@ -37,22 +37,22 @@ import Combine
 ///                 print("This is the end; the end, my friend.")
 ///         })
 ///
-///         // Let's say you have a network status indicator triggered by setting
-///         // "self.readingFromServer". Automatically update it by subscribing to
-///         // readingFromNetwork.
-///         let activitySubscriber = connection.readingFromNetwork
-///             .throttle(for: 1.0, scheduler: RunLoop.current, latest: true) // Ignore really fast on/off
-///             .sink(receivedValue: {
-///                 self.readingFromServer = $0
-///             })
+///     // Let's say you have a network status indicator triggered by setting
+///     // "self.readingFromServer". Automatically update it by subscribing to
+///     // readingFromNetwork.
+///     let activitySubscriber = connection.readingFromNetwork
+///         .throttle(for: 1.0, scheduler: RunLoop.current, latest: true) // Ignore really fast on/off
+///         .sink(receivedValue: {
+///             self.readingFromServer = $0
+///         })
 ///
-///         // Connect
-///         connection.connectToHost(host: "imap.google.com", port: UInt32(993), useSSL: true)
+///     // Connect
+///     connection.connectToHost(host: "imap.google.com", port: UInt32(993), useSSL: true)
 ///
-///         // Say hi
-///         connection.write("A001 LOGIN SMITH SESAME\n")
+///     // Say hi
+///     connection.write("A001 LOGIN SMITH SESAME\n")
 ///
-/// Call `write` to write commands to the server.
+/// Call `write` to write (strings or raw data) to the server.
 ///
 /// Subscribe to:
 /// - `receivedData` to read data from the server
