@@ -62,7 +62,7 @@ import Combine
 @available(iOS 13.0, *)
 @available(OSX 10.15, *)
 @available(tvOS 13.0, *)
-class SocketConnection: NSObject, StreamDelegate {
+public class SocketConnection: NSObject, StreamDelegate {
 
     /// An error involving the socket connection or reading/writing data
     public enum ConnectionError: Error {
