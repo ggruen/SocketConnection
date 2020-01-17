@@ -347,7 +347,7 @@ public class SocketConnection: NSObject, StreamDelegate {
 
 
     // NSStreamDelegate
-    func stream(_ sender: Stream, handle streamEvent: Stream.Event) {
+    public func stream(_ sender: Stream, handle streamEvent: Stream.Event) {
         switch streamEvent {
         case .openCompleted:
             if sender == outputStream {
