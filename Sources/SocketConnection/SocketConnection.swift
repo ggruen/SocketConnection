@@ -222,7 +222,7 @@ public class SocketConnection: NSObject, StreamDelegate {
     /// - Parameter usingSSL: `true` to negotiate an SSL connection, `false` otherwise. Use `false` for testing (e.g. connecting to `localhost`,
     ///     `true` when connecting to a real server (e.g. `imap.gmail.com`). `connect` isn't smart enough to tell if you specify a non-SSL port and
     ///     say `true` for `usingSSL` - your connection will just fail and you'll get an error sent via `connectionStatus`.
-    func connect(to host: String, on port: Int, usingSSL: Bool) {
+    public func connect(to host: String, on port: Int, usingSSL: Bool) {
 
         isConnecting = true
 
@@ -257,7 +257,7 @@ public class SocketConnection: NSObject, StreamDelegate {
     }
 
     /// No R2, shut them all down! (Closes the input and output streams)
-    func close() {
+    public func close() {
         inputStream?.close()
         inputStream?.remove(from: .current, forMode: .common)
         inputStream = nil
