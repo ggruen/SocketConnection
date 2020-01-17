@@ -45,7 +45,7 @@ Requires iOS/iPadOS/tvOS 13.0+, MacOS 10.15.0+.
          })
 
      // Connect
-     connection.connectToHost(host: "imap.google.com", port: UInt32(993), useSSL: true)
+     connection.connect(host: "imap.google.com", port: 993, useSSL: true)
 
      // Say hi
      connection.write("A001 LOGIN SMITH SESAME\n")

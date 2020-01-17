@@ -47,7 +47,7 @@ import Combine
 ///         })
 ///
 ///     // Connect
-///     connection.connectToHost(host: "imap.google.com", port: UInt32(993), useSSL: true)
+///     connection.connect(host: "imap.google.com", port: 993, useSSL: true)
 ///
 ///     // Say hi
 ///     connection.write("A001 LOGIN SMITH SESAME\n")
