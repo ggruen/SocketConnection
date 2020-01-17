@@ -3,5 +3,6 @@ import XCTest
 import SocketConnectionTests
 
 var tests = [XCTestCaseEntry]()
-tests += SocketConnectionTests.allTests()
+tests += SocketConnectionTests.__allTests()
+
 XCTMain(tests)
