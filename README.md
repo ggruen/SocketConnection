@@ -6,7 +6,7 @@ Combine, rather than delegates, to send data and notifications back to your code
 This makes it great for modern apps using SwiftUI, but also means it (currently) doesn't work on
 Linux. 😔🐧
 
-Requires iOS/iPadOS/tvOS 13.0+, MacOS 10.15.0+.
+Requires iOS/iPadOS/tvOS 13.0+, or MacOS 10.15.0+. Does _not_ run on WatchOS (including 6.0+).
 
      let connection = SocketConnection()
 

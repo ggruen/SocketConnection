@@ -123,56 +123,74 @@ final class SocketConnectionTests: XCTestCase {
 
         // When a LOGOUT command is sent
         // (we set up the expectations first, then send the command)
+
+        // Then the server receives data
         let connectionReceivedDataExpectation = XCTestExpectation(description:
             "Received response to LOGOUT")
+
+        // and we receive BYE
         let byeExpectation = XCTestExpectation(description:
             "Server said BYE")
+
+        // and the server responds to our logout command
         let serverSaidOkToLogoutExpectation = XCTestExpectation(description:
             "Server said A002 OK in reply to A002 LOGOUT")
 
+        // and the server closes the connection
+        let serverClosedConnectionExpectation = XCTestExpectation(description: "Server closed the connection")
+
+        // This is run when we receive data
         let dataReceiver = connection?.receivedData.sink(receiveValue: { data in
-            // We got data - satisfy that expectation
+            // - We got data - satisfy that expectation
             connectionReceivedDataExpectation.fulfill()
 
-            // Now parse our data for expected responses
+            // - Now parse our data for expected responses
             let receivedString = String(decoding: data, as: UTF8.self)
             print(String(decoding: data, as: UTF8.self))
 
+            // - Fulfill the BYE expectation
             if receivedString.contains(" BYE ") {
                 print("Server said bye")
                 byeExpectation.fulfill()
             }
 
+            // - Fulfill the "OK to logout" expectation
             if receivedString.contains("A002 OK") {
                 print("Server said OK to A002 logout")
                 serverSaidOkToLogoutExpectation.fulfill()
             }
         })
 
-        let serverClosedConnectionExpectation = XCTestExpectation(description: "Server closed the connection")
+        // We get status updates (which tell us if the server dropped the connection, for example) from
+        // the "connectionStatus" publisher, so hook that up.
         let statusUpdates = connection?.connectionStatus.sink(receiveValue: { status in
             switch status {
             case .endEncountered:
+                // - endEncountered means the remote server hung up on us, so fulfill that.
                 serverClosedConnectionExpectation.fulfill()
             default:
                 XCTFail("Got an unexpected status while waiting for server to close connection.")
             }
         })
+
+        // Now we send our logout from the "when" above
         try connection?.write("A002 LOGOUT\r\n")
 
-        // Then BYE is received ...
-        // (on a remote connection, e.g. gmail.com, our logout can get queued up to send before the OK
+        // And wait for all our expectations to be fulfilled.
+
+        // Note: On a remote connection, e.g. gmail.com, our logout can get queued up to send before the OK
         // from the connection is received - SocketConnection will send our "LOGOUT" when it gets the all clear
         // from the server (via .hasSpaceAvailable in `stream(_ aStream: Stream, handle eventCode: Stream.Event)`).
-        // ... the server says ok to our logout command ...
-        // ... and the connection is closed.
-        // Node's `imap-server` doesn't disconnect after a LOGOUT, and has an idle timeout of 30 seconds,
-        // so we wait 40 seconds - a real IMAP server will disconnect and `imap-server` will time out.
+
+        // Also note: Node's `imap-server` doesn't disconnect after a LOGOUT, and has an idle timeout of 30 seconds,
+        // so we wait 40 seconds. If you aim "host" at a real IMAP server, it will will disconnect instead of timing
+        // out.
         wait(for: [connectionReceivedDataExpectation, byeExpectation, serverSaidOkToLogoutExpectation,
                    serverClosedConnectionExpectation], timeout: 40.0)
 
         XCTAssertFalse(connection?.connected ?? false)
 
+        // Clean up
         dataReceiver?.cancel()
         statusUpdates?.cancel()
     }

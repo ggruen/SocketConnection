@@ -8,7 +8,7 @@
 import Foundation
 import Combine
 
-/// Manages a two-way socket connection to an server (e.g. an IMAP server).
+/// Manages a two-way socket connection to a server (e.g. an IMAP server).
 ///
 ///     let connection = SocketConnection()
 ///
@@ -47,10 +47,10 @@ import Combine
 ///         })
 ///
 ///     // Connect
-///     connection.connect(host: "imap.google.com", port: 993, useSSL: true)
+///     connection.connect(host: "imap.gmail.com", port: 993, useSSL: true)
 ///
 ///     // Say hi
-///     connection.write("A001 LOGIN SMITH SESAME\n")
+///     connection.write("A001 LOGIN SMITH SESAME\r\n")
 ///
 /// Call `write` to write (strings or raw data) to the server.
 ///
@@ -59,9 +59,7 @@ import Combine
 /// - `connectionStatus` to get status updates about the connection
 /// - `readingFromNetwork` to get a true/false signal that the connection's reading from the network
 ///
-@available(iOS 13.0, *)
-@available(OSX 10.15, *)
-@available(tvOS 13.0, *)
+@available(iOS 13.0, OSX 10.15, tvOS 13.0, *)
 public class SocketConnection: NSObject, StreamDelegate {
 
     /// An error involving the socket connection or reading/writing data
@@ -76,6 +74,9 @@ public class SocketConnection: NSObject, StreamDelegate {
 
         /// The write to the stream failed. "withError" will contain the localized string from the stream's error message.
         case writeToStreamFailed(withError: String)
+
+        /// SocketConnection was unable to open or maintain the input or output stream.
+        case unableToConnect
     }
 
     /// A status that can be sent via the `connectionStatus` publisher. These mirror the Stream.Event constants that Stream will send to its
