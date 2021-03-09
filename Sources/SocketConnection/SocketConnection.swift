@@ -239,18 +239,22 @@ public class SocketConnection: NSObject, StreamDelegate {
         inputStream = readStream!.takeRetainedValue()
         outputStream = writeStream!.takeRetainedValue()
 
-        inputStream?.delegate = self
-        outputStream?.delegate = self
+        if let inputStream = inputStream, let outputStream = outputStream {
+            inputStream.delegate = self
+            outputStream.delegate = self
 
-        inputStream?.schedule(in: .current, forMode: .common)
-        outputStream?.schedule(in: .current, forMode: .common)
+            inputStream.schedule(in: .current, forMode: .common)
+            outputStream.schedule(in: .current, forMode: .common)
 
-        inputStream?.open()
-        outputStream?.open()
+            inputStream.open()
+            outputStream.open()
 
-        if usingSSL {
-            inputStream?.setProperty(StreamSocketSecurityLevel.negotiatedSSL, forKey: Stream.PropertyKey.socketSecurityLevelKey)
-            outputStream?.setProperty(StreamSocketSecurityLevel.negotiatedSSL, forKey: Stream.PropertyKey.socketSecurityLevelKey)
+            if usingSSL {
+                inputStream.setProperty(StreamSocketSecurityLevel.negotiatedSSL, forKey: Stream.PropertyKey.socketSecurityLevelKey)
+                outputStream.setProperty(StreamSocketSecurityLevel.negotiatedSSL, forKey: Stream.PropertyKey.socketSecurityLevelKey)
+            }
+        } else {
+            SocketConnection.log("inputStream or outputStream was nil.")
         }
 
         isConnecting = false
@@ -355,31 +359,31 @@ public class SocketConnection: NSObject, StreamDelegate {
                 connectionStatus.send(.openCompleted)
             }
         case .hasBytesAvailable:
-            print("new message received")
+            SocketConnection.log("new message received")
             if let stream = sender as? InputStream {
                 readAvailableBytes(stream: stream)
             }
             break;
         case .hasSpaceAvailable:
             if sender == inputStream {
-                print("input has space available")
+                SocketConnection.log("input has space available")
                 // I don't think sender == InputStream and .hasSpaceAvailable can happen, but if it does, ignore it.
                 break;
             }
 
             if sender == outputStream {
-                print("output has space available")
+                SocketConnection.log("output has space available")
             }
 
             // See if we've got something in the queue to write. If so, send it.
             if !writeQueue.isEmpty {
                 if let stream = sender as? OutputStream, let data = writeQueue.first {
                     do {
-                        print("  - writing queued data to stream")
+                        SocketConnection.log("  - writing queued data to stream")
                         try write(data: data, to: stream)
                         writeQueue.removeFirst()
                     } catch {
-                        print("Caught thrown error while writing data: \(error)")
+                        SocketConnection.log("Caught thrown error while writing data: \(error)")
                         // Add handling code based on encountered scenarios. Do we need to reconnect?
                         // Do we need to reject or reformat the data?
                         // As of 1/15/20 the only reason for `write` to `throw` is if the data we sent
@@ -393,7 +397,7 @@ public class SocketConnection: NSObject, StreamDelegate {
                 } else {
                     let error = "Have stuff to write, but either didn't get an OutputStream or something other than "
                         + "Data was in the queue."
-                    print(error)
+                    SocketConnection.log(error)
                     writeQueue.removeAll()
                     connectionStatus.send(.errorOccurred(ConnectionError.writeToStreamFailed(withError: error)))
                 }
@@ -402,18 +406,18 @@ public class SocketConnection: NSObject, StreamDelegate {
             }
             break;
         case .errorOccurred:
-            print("error occurred")
+            SocketConnection.log("error occurred")
             writeQueue.removeAll()
             connectionStatus.send(.errorOccurred(sender.streamError))
             break;
 
         case .endEncountered:
-            print("End of stream reached")
+            SocketConnection.log("End of stream reached")
             if sender == inputStream {
-                print("    - Input stream")
+                SocketConnection.log("    - Input stream")
             }
             if sender == outputStream {
-                print("    - Output stream")
+                SocketConnection.log("    - Output stream")
             }
 
             // Are these the right actions to take? What does "end of stream" mean - stream's closed, or it just
@@ -427,7 +431,7 @@ public class SocketConnection: NSObject, StreamDelegate {
             // Stream.Event is a struct with constants, not an enum, so we have to have a "default" condition
             // for the switch. `stream` can't `throw` because it's a delegate method, so we just print
             // a quiet log entry that nobody will see unless they're really looking.
-            print("A Stream.Event was sent that doesn't exist as of MacOS 10.15.2 / iOS 13.3...")
+            SocketConnection.log("A Stream.Event was sent that doesn't exist as of MacOS 10.15.2 / iOS 13.3...")
         }
     }
 
@@ -448,7 +452,7 @@ public class SocketConnection: NSObject, StreamDelegate {
             }
 
             if numberOfBytesRead < 0, let error = stream.streamError {
-                print(error)
+                SocketConnection.log(error.localizedDescription)
                 break
             }
 
@@ -459,5 +463,25 @@ public class SocketConnection: NSObject, StreamDelegate {
 
         readingFromNetwork.send(false)
     }
+
+    /// Prints `message` with a filterable `[IMAP]` prefix if running in DEBUG mode
+    public static func log(_ message: String) {
+        #if DEBUG
+        let timeString = SocketConnection.logDateFormatter.string(from: Date())
+        let splitMessage: [String] = message.components(separatedBy: .newlines)
+        for line in splitMessage {
+            if line.isEmpty { continue }
+            print("\(timeString) [SocketConnection]: \(line)")
+        }
+        #endif
+    }
+
+    /// The date/time format used for log output
+    static let logDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        return formatter
+    }()
 }
 

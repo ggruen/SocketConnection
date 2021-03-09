@@ -22,11 +22,12 @@ To run tests, you need to set "host" and "port" in "SocketConnectionTests".
 Rather than hammering your personal email account, I recommend installing
 a local IMAP server, like [imap-server](https://www.npmjs.com/package/imap-server)
 
-- cd # Go wherever you want to put the server code. Can be temporary
-    like /tmp or ~/Downloads.
-- mkdir imap-test-server
-- cd imap-test-server
-- npm install imap-server
+First, `cd` to wherever you want to put the server code. Can be temporary
+like /tmp or ~/Downloads. Then, install `imap-server`
+
+    mkdir imap-test-server
+    cd imap-test-server
+    npm install imap-server
 
 In your imap-test-server directory, Put this script into `imap-test-server.js`:
 
