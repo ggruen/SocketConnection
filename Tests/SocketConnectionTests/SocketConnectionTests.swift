@@ -14,12 +14,17 @@ import XCTest
 final class SocketConnectionTests: XCTestCase {
     var connection: SocketConnection?
 
+    /// Host to use for testing. You can change this to any IMAP server. The tests just connect and send commands that don't need authentication.
+    ///
+    /// Note: https://www.npmjs.com/package/imap-server
+    /// See Development.md to set up a quick test server.
+    let host = "localhost"
+
+    /// Port on the host to use for testing.
+    let port = 143
+
     override func setUp() {
-        // Given a valid server host and port
-        // Note: https://www.npmjs.com/package/imap-server
-        // See Development.md to set up a quick test server.
-        let host = "localhost"
-        let port = 143
+        // Given a valid server host and port (host and port are set at the class level above)
 
         // When connect is called
         connection = SocketConnection()
@@ -191,6 +196,44 @@ final class SocketConnectionTests: XCTestCase {
         XCTAssertFalse(connection?.connected ?? false)
 
         // Clean up
+        dataReceiver?.cancel()
+        statusUpdates?.cancel()
+    }
+
+    func testCanReconnectToServer() throws {
+        // Given an active server connection (already established in setUp)
+        XCTAssert(connection!.connected)
+
+        // If I disconnect, then reconnect
+        try connection!.write("A002 LOGOUT\r\n")
+        connection!.close()
+        XCTAssertFalse(connection!.connected)
+
+        let connectedExpectation = XCTestExpectation(description: "Publisher sent OK")
+        // holding the subscriber instance is required or the subscription is immediately lost
+        let dataReceiver = connection?.receivedData.sink(receiveValue: { data in
+            let stringReceived = String(decoding: data, as: UTF8.self)
+            if stringReceived.contains("* OK ") {
+                connectedExpectation.fulfill()
+            }
+        })
+        let connectionOpenExpectation = XCTestExpectation(description: "SocketConnection reported connection open")
+        let statusUpdates = connection?.connectionStatus.sink(receiveValue: { status in
+            switch status {
+            case .openCompleted:
+                connectionOpenExpectation.fulfill()
+            default:
+                // Got an unexpected status
+                XCTFail("Got unexpected status during connection")
+            }
+        })
+
+        connection?.connect(to: host, on: port, usingSSL: port == 993)
+
+        // Then I can write data to and read data from the connection
+        wait(for: [connectionOpenExpectation, connectedExpectation], timeout: 3.0)
+
+        // Clean up - Mostly to stop Xcode from complaining that these "aren't used".
         dataReceiver?.cancel()
         statusUpdates?.cancel()
     }
